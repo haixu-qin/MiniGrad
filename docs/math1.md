@@ -2,6 +2,9 @@
 ## Math Explanation
 \- Detailed Math Explanation for Backpropagation (`.backward()`):
 
+### Ref:
+You could read more about it [there](https://www.nature.com/articles/323533a0).
+
 ### Prerequisites:
 basic knowledge of Calculus (derivative and chain rule) and Linear Algebra (matrix multiplication).
 
