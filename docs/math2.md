@@ -4,7 +4,7 @@
 
 ### Prerequisites:
 You may want to read the Math Explanation for `.backward()`. \
-It could be found [there](docs/math1.md).
+It could be found [there](/math1.md).
 
 
 ## RAdam (Rectified Adam) Optimizer
@@ -126,8 +126,11 @@ self.biases[i] -= self.learning_rate * m_bias_corrected * r_t * l_t_biases
 #### Rest 
 Rest are explained by comments.
 
+#### Further Optimization:
+Multithreading and GPU Support. \
+But I probably won't do it because it's for small datasets.
+
 
 ## Lastly 
 Note that [PyTorch](https://pytorch.org/docs/stable/generated/torch.optim.RAdam.html)'s approach of RAdam is slightly different from the paper. This approach strictly follows the paper.
-
 
