@@ -1,3 +1,4 @@
+
 import numpy as np
 
 def sigmoid(x):
@@ -10,6 +11,10 @@ def safe_sigmoid(x):
 def sigmoid_derivative(x):
     return x * (1 - x)
 
+def softmax(z):
+    e_z = np.exp(z - np.max(z))  # subtract max for numerical stability
+    return e_z / e_z.sum(axis=1, keepdims=True)
+
 class DeepFeedforwardNetwork:
     def __init__(self, input_size, layer_sizes, learning_rate=0.01):
         self.layers = [] #w
@@ -19,26 +24,63 @@ class DeepFeedforwardNetwork:
             self.layers.append(np.random.randn(prev_size, size) * 1)  # 0.01, small weight initialization
             self.biases.append(np.zeros((1, size)))
             prev_size = size
+          
         self.learning_rate = learning_rate
 
-    def forward(self, x):
-        self.outputs = []
-        self.inputs = [x]
+        self.forward = self.forward_one_y
+        self.compute_loss = self.compute_loss_mse
+        if layer_sizes[-1] > 1:
+          forward = self.forward_multi_y 
+          compute_loss = self.compute_loss_cce #categorical_cross_entropy
+
+    def forward_one_y(self, x):
+        self.outputs = [] #y
+        self.inputs = [x] #z
         for w, b in zip(self.layers, self.biases):
             z = np.dot(x, w) + b
             y = safe_sigmoid(z)
             self.inputs.append(z)
-            self.outputs.append(y)
-            x = y
+            self.outputs.append(y)  
+            x = y  # Update x for the next iteration
         return self.outputs[-1]
 
-    def compute_loss(self, predicted, actual):
+    def forward_multi_y(self, x):
+        self.outputs = [] #y 
+        self.inputs = [x] #z
+
+        # Iterate to second-to-last layer
+        for i in range(len(self.layers) - 1):
+          z = np.dot(x, self.layers[i]) + self.biases[i]
+          y = safe_sigmoid(z)   # Use sigmoid activation for these layers
+          self.inputs.append(z)
+          self.outputs.append(y)
+          x = y  # Update x for the next iteration
+
+        # Process the last layer separately
+        z = np.dot(x, self.layers[-1]) + self.biases[-1]
+        y = softmax(z)   # Use softmax activation for the last layer
+        self.inputs.append(z)
+        self.outputs.append(y)
+
+        return self.outputs[-1]
+
+    def compute_loss_mse(self, predicted, actual):
         return np.mean(0.5 * (predicted - actual) ** 2)  # MSE loss
 
+    def compute_loss_cce(self, predicted, actual):
+      n_samples = actual.shape[0]
+      predicted_clipped = np.clip(predicted, 1e-15, 1 - 1e-15)
+      loss = -np.sum(actual * np.log(predicted_clipped))
+      return loss / n_samples # cce loss 
+
     def compute_accuracy(self, y_pred, y_test):
-    # Assuming y_pred and y_test are 1D arrays of predicted labels and true labels, respectively
-        correct_predictions = np.sum(y_pred == y_test)
-        total_predictions = y_test.shape[0]
+        if y_test.ndim == 1 or y_test.shape[1] == 1:
+                y_true_labels = y_test.flatten()
+        else:
+                y_true_labels = np.argmax(y_test, axis=1)
+        y_pred_labels = np.argmax(y_pred, axis=1)
+        correct_predictions = np.sum(y_pred_labels == y_true_labels)
+        total_predictions = y_true_labels.size
         accuracy = correct_predictions / total_predictions
         return accuracy
 
@@ -50,8 +92,11 @@ class DeepFeedforwardNetwork:
         for i in range(len(self.layers) - 1, -1, -1):
           
             pre_activation_grad = grad * sigmoid_derivative(self.outputs[i])
+            # last layer for multi y 
+            if i == len(self.layers) - 1 and y_true.shape[1] > 1:
+              pre_activation_grad = grad
             weight_grad = np.dot(self.outputs[i-1].T, pre_activation_grad) if i > 0 else np.dot(self.inputs[0].T, pre_activation_grad)
-            
+
             # Update weights and biases
             self.layers[i] -= self.learning_rate * weight_grad
             self.biases[i] -= self.learning_rate * np.sum(pre_activation_grad, axis=0)
@@ -60,7 +105,7 @@ class DeepFeedforwardNetwork:
 
     def backward_opt(self, y_true):
         # Start with the gradient from the loss
-        grad = (self.outputs[-1] - y_true)
+        grad = (self.outputs[-1] - y_true) #tef' = cce'
         
         # RAdam hyperparameters
         beta1 = 0.9 # m coef
@@ -79,11 +124,14 @@ class DeepFeedforwardNetwork:
         # Increment timestep for RAdam for each pass
         self.t += 1
 
-        # Reverse iterate through layers
+        # Reverse iterate through layers 
         for i in range(len(self.layers) - 1, -1, -1):
 
-            # dL/dw. same as basic SGD 
+            # dL/dz, dL/dw. same as basic SGD
             pre_activation_grad = grad * sigmoid_derivative(self.outputs[i])
+            # last layer for multi y 
+            if i == len(self.layers) - 1 and y_true.shape[1] > 1: #could be opt'ed if put outside of the loop and use a local func. But for the sake of the simplicity and cleanliness of the code (bc it's a tutorial) I won't do that.
+              pre_activation_grad = grad
             weight_grad = np.dot(self.outputs[i-1].T, pre_activation_grad) if i > 0 else np.dot(self.inputs[0].T, pre_activation_grad)
             
             # RAdam computations for weights
@@ -126,6 +174,7 @@ class DeepFeedforwardNetwork:
             grad = np.dot(pre_activation_grad, self.layers[i].T)
     
     def train(self, x, y, epochs):
+
         for epoch in range(epochs):
             predictions = self.forward(x)
             loss = self.compute_loss(predictions, y)
@@ -135,7 +184,7 @@ class DeepFeedforwardNetwork:
                 #print(predictions)
                 print([round(pred[0]) for pred in predictions]) #debug
 
-  
+              
     # Tests 
     def pred(self, x):
       predictions = self.forward(x)
@@ -155,8 +204,5 @@ class DeepFeedforwardNetwork:
 
     def get_biases(self):
       return self.biases
-
-
-
 
 

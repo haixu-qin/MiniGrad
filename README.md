@@ -21,8 +21,14 @@ It could be found [there](docs/math1.md).
 Math Explanation for `.backward_opt()` (for better and faster convergence). \
 It could be found [there](docs/math2.md).
 
+Math Explanation for multi-D y (`./iris/minigrad_iris.py`). \
+It could be found [there](docs/math3.md).
+
 ## Optimizers.
 Optimizer is used by the library by default. \
 [RAdam](https://arxiv.org/abs/1908.03265) (Rectified Adam), which introduces a rectification term in addition to the popular standard Adam optimizer (which uses Momentum and RMSprop and a bias-correction mechanism). It performs well for small datasets.
 
+
+## Multi-D Y
+For additional support for multi-D y, check out `/iris`. I seperated them out so it's easier to study the basics bc it's more of a tutorial.
 

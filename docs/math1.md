@@ -59,11 +59,28 @@ dL/dw = dL/dy * dy/dw \
 = prev_grad * dy/dz * dz/dw \
 = prev_grad * d_sigmoid(z) * x
 
+This means the correct calculation is:
+
+weight_grad = pre_activation_grad * output of the previous layer.T
+
 which is
 
 `pre_activation_grad = grad * sigmoid_derivative(self.outputs[i]) #prev_grad * d_sigmoid(z)`
 
-`weight_grad = np.dot(self.inputs[i].T, pre_activation_grad) #prev_grad * d_sigmoid(z) * x`
+Not that \
+When you compute the derivative of the sigmoid function: \
+σ'(z) = σ(z)(1−σ(z)) \
+σ(z) = y(1−y) \
+This requires y, the output after the activation, not z.
+
+And
+
+`weight_grad = np.dot(self.outputs[i-1].T, pre_activation_grad) if i > 0 else np.dot(self.inputs[0].T, pre_activation_grad) #prev_grad * d_sigmoid(z) * x`
+
+Note that \
+x is the input to the current layer, which is the output y from the previous layer. \
+Not the weighted sum of the prev inputs (z=wy+b) for the curr layer (self.inputs[i]). \
+If you're confused, check `.forward()`.
 
 #### Now we have dL/dw for this layer
 
