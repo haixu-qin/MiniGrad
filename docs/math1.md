@@ -129,5 +129,6 @@ and it's done.
 
 \
 After the loop, that's one pass of backpropagation. \
-If you want another pass, then you do another forward pass and re compute the loss, etc..
+1 epoch = 1 forward pass + 1 backward pass for all training examples. \
+If you want another pass, then you do another forward pass and re compute the loss (for 1 example / another), etc..
 
